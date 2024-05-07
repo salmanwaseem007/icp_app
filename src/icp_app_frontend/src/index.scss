@@ -1,0 +1,63 @@
+.App {
+  text-align: center;
+}
+
+body {
+  font-family: sans-serif;
+  font-size: 1.5rem;
+  background-image: url(/icp.png) !important;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+  height: 100%;
+  width: 100%;
+}
+
+img {
+  max-width: 50vw;
+  max-height: 25vw;
+  display: block;
+  margin: auto;
+  padding-top: 1vw;
+}
+
+.price-container {
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  gap: 0.3em;
+  flex-flow: row wrap;
+  min-width: 10em;
+  max-width: 18vw;
+  margin: auto;
+  align-items: baseline;
+  font-size: 20px;
+  color: white;
+  border-radius: 0.2em;
+  transition: background-color 1s ease;
+}
+
+#principal {
+  color: white;
+  font-size: 20px;
+}
+
+#login {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgb(249 249 249 / 79%)
+}
+
+#login > svg{
+  margin-bottom: 3px;
+  margin-right: 2px;
+}
+
+#currency{
+  display: none;
+}

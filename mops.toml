@@ -1,0 +1,4 @@
+[dependencies]
+base = "0.11.1"
+serde = "2.2.0"
+motoko-base = "https://github.com/dfinity/motoko-base#master@f2b7a634e34213aa5288cd2333ddfb7fa4403f6d"
