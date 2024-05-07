@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createActor, icp_app_backend } from 'declarations/icp_app_backend';
 import { AuthClient } from "@dfinity/auth-client"
 import { HttpAgent } from "@dfinity/agent";
+import { Button, Modal, Form } from 'react-bootstrap';
 
 const App = () => {
   const [userData, setUserData] = useState(null);
@@ -13,6 +14,24 @@ const App = () => {
   const internetIdentityUrl = network === "local" ? "http://" + process.env.CANISTER_ID_INTERNET_IDENTITY + ".localhost:4943/" : "https://identity.ic0.app"
   let backendActor = icp_app_backend;
 
+  const [show, setShow] = useState(false);
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+  const [formData, setFormData] = useState({ name: '', email: '' });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Handle form submission here
+    console.log(formData);
+    handleClose(); // Close the dialog box after submission
+  };
 
   const changeBackgroundColor = (color) => {
     setBackgroundColor(color); // Change color
@@ -51,7 +70,7 @@ const App = () => {
     const principal = await icp_app_backend.getPrincipal();
 
     document.getElementById("login").style.display = "none";
-    document.getElementById("principal").innerText = "Welcome " +principal;
+    document.getElementById("principal").innerText = "Welcome " + principal;
 
     const userData = {
       "id": principal
@@ -114,7 +133,45 @@ const App = () => {
           <label id='currency'>USD</label>
         </div>
         <section id="principal"></section>
+        {/* <Button variant="primary" onClick={handleShow}>Edit Profile</Button> */}
       </main>
+      <Modal show={show} onHide={handleClose}>
+        <Modal.Header closeButton>
+          <Modal.Title>Dialog Title</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmit}>
+            <Form.Group controlId="formName">
+              <Form.Label>Name</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter your name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+              />
+            </Form.Group>
+            <Form.Group controlId="formEmail">
+              <Form.Label>Email address</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter your email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit">
+              Save
+            </Button>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
