@@ -20,36 +20,38 @@ actor {
    * Application State
    */
 
-  // The next available superhero identifier.
-  private stable var next : Types.UserId = 0;
-
-  // The superhero data store.
-  private stable var users : Trie.Trie<Types.UserId, Types.User> = Trie.empty();
+  // The users data store.
+  private stable var users : Trie.Trie<Types.Principal, Types.User> = Trie.empty();
 
   /**
    * High-Level API
    */
 
   // Create a user.
-  public func createUser(user : Types.User) : async Types.UserId {
-    let nextId = next;
-    next += 1;
-    users := Trie.replace(
-      users,
-      key(nextId),
-      Nat32.equal,
-      ?user,
-    ).0;
-    return nextId;
+  public func createUser(user : Types.User) : async Types.Principal {
+    var _userExists = await getUser(user.principal);
+    if (_userExists == null) {
+      users := Trie.replace(
+        users,
+        key(user.principal),
+        Text.equal,
+        ?user,
+      ).0;
+      print(debug_show ("Adding new user: " #user.principal));
+    } else {
+      print(debug_show ("User already exists: " #user.principal));
+    };
+
+    return user.principal;
   };
 
-  public query func getUser(userID : Types.UserId) : async ?Types.User {
-    return Trie.find(users, key(userID), Nat32.equal);
+  public query func getUser(principal : Types.Principal) : async ?Types.User {
+    return Trie.find(users, key(principal), Text.equal);
   };
 
   // Create a trie key from a superhero identifier.
-  private func key(x : Types.UserId) : Trie.Key<Types.UserId> {
-    return { hash = x; key = x };
+  private func key(x : Types.Principal) : Trie.Key<Types.Principal> {
+    return { hash = Text.hash(x); key = x };
   };
 
   public shared (message) func getPrincipal() : async Text {
@@ -57,10 +59,10 @@ actor {
     let user : Types.User = {
       principal = _principal;
     };
-    let newUserID = await createUser(user);
+    let principal = await createUser(user);
 
-    print(debug_show ("User logged in: userID: " # Nat32.toText(newUserID) # ", principal: " #_principal));
-    return _principal;
+    print(debug_show ("User logged in: principal: " #_principal));
+    return principal;
   };
 
   public query func transform(raw : Types.TransformArgs) : async Types.CanisterHttpResponsePayload {

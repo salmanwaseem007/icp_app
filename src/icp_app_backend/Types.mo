@@ -71,7 +71,7 @@ module Types {
         currency : Text;
     };
 
-    public type UserId = Nat32;
+    public type Principal = Text;
 
     public type User = {
         principal : Text;
