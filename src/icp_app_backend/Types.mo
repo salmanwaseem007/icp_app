@@ -75,6 +75,8 @@ module Types {
 
     public type User = {
         principal : Text;
+        name : ?Text;
+        email : ?Text
     };
 
 };

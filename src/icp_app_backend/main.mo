@@ -5,10 +5,8 @@ import { print } = "mo:base/Debug";
 import Timer "mo:base/Timer";
 import Bool "mo:base/Bool";
 // import JSON "mo:serde/JSON";
-import Principal "mo:base/Principal";
 import Trie "mo:base/Trie";
-import Nat32 "mo:base/Nat32";
-
+import Option "mo:base/Option";
 import Types "Types";
 
 actor {
@@ -28,7 +26,7 @@ actor {
    */
 
   // Create a user.
-  public func createUser(user : Types.User) : async Types.Principal {
+  public shared func createUser(user : Types.User) : async Types.Principal {
     var _userExists = await getUser(user.principal);
     if (_userExists == null) {
       users := Trie.replace(
@@ -41,8 +39,21 @@ actor {
     } else {
       print(debug_show ("User already exists: " #user.principal));
     };
-
     return user.principal;
+  };
+
+  public shared func update(principal : Types.Principal, _user : Types.User) : async Bool {
+    let result = Trie.find(users, key(principal), Text.equal);
+    let exists = Option.isSome(result);
+    if (exists) {
+      users := Trie.replace(
+        users,
+        key(principal),
+        Text.equal,
+        ?_user,
+      ).0;
+    };
+    return exists;
   };
 
   public query func getUser(principal : Types.Principal) : async ?Types.User {
@@ -52,17 +63,6 @@ actor {
   // Create a trie key from a superhero identifier.
   private func key(x : Types.Principal) : Trie.Key<Types.Principal> {
     return { hash = Text.hash(x); key = x };
-  };
-
-  public shared ({caller}) func getPrincipal() : async Text {
-    let _principal = Principal.toText(caller);
-    let user : Types.User = {
-      principal = _principal;
-    };
-    let principal = await createUser(user);
-
-    print(debug_show ("User logged in: principal: " #_principal));
-    return principal;
   };
 
   public query func transform(raw : Types.TransformArgs) : async Types.CanisterHttpResponsePayload {

@@ -3,8 +3,10 @@ import { createActor, icp_app_backend } from 'declarations/icp_app_backend';
 import { AuthClient } from "@dfinity/auth-client"
 import { HttpAgent } from "@dfinity/agent";
 import { Button, Modal, Form } from 'react-bootstrap';
+import { BoxArrowInRight, BoxArrowInLeft } from 'react-bootstrap-icons';
 
 const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const [price, setPrice] = useState("loading");
   const [previousPrice, setPreviousPrice] = useState(null);
@@ -40,13 +42,13 @@ const App = () => {
     }, 600);
   };
 
-  const handleClick = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     // create an auth client
     let authClient = await AuthClient.create();
 
-    // Check if the user is already logged in
+    // Check if the user is already authenticated in
     if (authClient.isAuthenticated() && ((await authClient.getIdentity().getPrincipal().isAnonymous()) === false)) {
       handleAuthenticated(authClient);
     } else {
@@ -62,21 +64,32 @@ const App = () => {
     }
 
     async function handleAuthenticated(authClient) {
-      // getting principal from backend, not correct
-      // const principal = await icp_app_backend.getPrincipal();
       const identity = await authClient.getIdentity();
-      const principal = identity.getPrincipal().toString();
-      console.log("logged in user principal", principal);
+      const _principal = identity.getPrincipal().toString();
+      console.log("logged in user principal", _principal);
 
-      document.getElementById("login").style.display = "none";
-      document.getElementById("principal").innerText = "Welcome " + principal;
+      setIsAuthenticated(true);
+      document.getElementById("principal").innerText = "Welcome " + _principal;
 
-      const userData = {
-        "id": principal
+      const _userData = {
+        "id": _principal
       };
-      setUserData(userData);
+      setUserData(_userData);
       // Save updated user data to local storage
-      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem('userData', JSON.stringify(_userData));
+
+      const requestData = {
+        principal: _principal,
+        name : [],
+        email : []
+      };
+      await icp_app_backend.createUser(requestData)
+        .then(response => {
+          console.log(response);
+        })
+        .catch(error => {
+          console.error(error);
+        });
     }
 
     // At this point we're authenticated, and we can get the identity from the auth client:
@@ -89,13 +102,21 @@ const App = () => {
     });
   };
 
+  const handleLogout = async (e) => {
+    const authClient = await AuthClient.create();
+    await authClient.logout();
+    setUserData(null);
+    localStorage.removeItem('userData');
+    window.location.reload();
+  };
+
   useEffect(() => {
     const userDataLS = localStorage.getItem("userData");
     if (userDataLS) {
       const userDataObj = JSON.parse(userDataLS);
       setUserData(userDataObj);
       // Hide the button
-      document.getElementById("login").style.display = "none";
+      setIsAuthenticated(true);
       document.getElementById("principal").innerText = "Welcome " + userDataObj.id;
     }
     const fetchPrice = async () => {
@@ -133,11 +154,12 @@ const App = () => {
   return (
     <div className="App">
       <main>
-        <button id='login' onClick={handleClick}><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="currentColor"><path d="M19.5 31.65q-.45-.45-.45-1.1 0-.65.45-1.05l4-4h-16q-.65 0-1.075-.425Q6 24.65 6 24q0-.65.425-1.075Q6.85 22.5 7.5 22.5h15.9l-4.05-4.05q-.4-.4-.4-1.025 0-.625.45-1.075.45-.45 1.075-.45t1.075.45L28.2 23q.25.25.35.5.1.25.1.55 0 .3-.1.55-.1.25-.35.5l-6.6 6.6q-.4.4-1.025.4-.625 0-1.075-.45ZM25.95 42q-.65 0-1.075-.425-.425-.425-.425-1.075 0-.65.425-1.075Q25.3 39 25.95 39H39V9H25.95q-.65 0-1.075-.425-.425-.425-.425-1.075 0-.65.425-1.075Q25.3 6 25.95 6H39q1.2 0 2.1.9.9.9.9 2.1v30q0 1.2-.9 2.1-.9.9-2.1.9Z"></path></svg></button>
+        {!isAuthenticated && <Button title='Login' id='login' onClick={handleLogin} variant="outline-secondary"><BoxArrowInRight /></Button>}
+        {isAuthenticated && <Button title='Logout' id='logout' onClick={handleLogout} variant="outline-secondary"><BoxArrowInLeft /></Button>}
         <img src="/logo2.svg" alt="DFINITY logo" />
         <br />
         <div className='price-container' style={{ backgroundColor }}>
-          <label >Current ICP-USD Price: </label>
+          <label>Current ICP-USD Price:</label>
           <label id="price">{price}</label>
           <label id='currency'>USD</label>
         </div>
