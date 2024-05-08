@@ -54,8 +54,8 @@ actor {
     return { hash = Text.hash(x); key = x };
   };
 
-  public shared (message) func getPrincipal() : async Text {
-    let _principal = Principal.toText(message.caller);
+  public shared ({caller}) func getPrincipal() : async Text {
+    let _principal = Principal.toText(caller);
     let user : Types.User = {
       principal = _principal;
     };

@@ -46,15 +46,38 @@ const App = () => {
     // create an auth client
     let authClient = await AuthClient.create();
 
-    // start the login process and wait for it to finish
-    await new Promise((resolve) => {
-      authClient.login({
-        identityProvider: internetIdentityUrl,
-        onSuccess: resolve,
+    // Check if the user is already logged in
+    if (authClient.isAuthenticated() && ((await authClient.getIdentity().getPrincipal().isAnonymous()) === false)) {
+      handleAuthenticated(authClient);
+    } else {
+      // Log in
+      await new Promise((resolve) => {
+        authClient.login({
+          identityProvider: internetIdentityUrl,
+          onSuccess: () => {
+            handleAuthenticated(authClient);
+          }
+        });
       });
-    }).then(() => {
-      getPrincipal();
-    });
+    }
+
+    async function handleAuthenticated(authClient) {
+      // getting principal from backend, not correct
+      // const principal = await icp_app_backend.getPrincipal();
+      const identity = await authClient.getIdentity();
+      const principal = identity.getPrincipal().toString();
+      console.log("logged in user principal", principal);
+
+      document.getElementById("login").style.display = "none";
+      document.getElementById("principal").innerText = "Welcome " + principal;
+
+      const userData = {
+        "id": principal
+      };
+      setUserData(userData);
+      // Save updated user data to local storage
+      localStorage.setItem('userData', JSON.stringify(userData));
+    }
 
     // At this point we're authenticated, and we can get the identity from the auth client:
     const identity = authClient.getIdentity();
@@ -64,20 +87,6 @@ const App = () => {
     backendActor = createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
       agent,
     });
-  };
-
-  const getPrincipal = async () => {
-    const principal = await icp_app_backend.getPrincipal();
-
-    document.getElementById("login").style.display = "none";
-    document.getElementById("principal").innerText = "Welcome " + principal;
-
-    const userData = {
-      "id": principal
-    };
-    setUserData(userData);
-    // Save updated user data to local storage
-    localStorage.setItem('userData', JSON.stringify(userData));
   };
 
   useEffect(() => {
