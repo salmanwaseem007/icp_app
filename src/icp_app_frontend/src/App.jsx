@@ -4,6 +4,7 @@ import { AuthClient } from "@dfinity/auth-client"
 import { HttpAgent } from "@dfinity/agent";
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap';
 import { BoxArrowInRight } from 'react-bootstrap-icons';
+import PriceContainer from './PriceContainer/PriceContainer';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -179,8 +180,6 @@ const App = () => {
 
         setPreviousPrice(newPrice);
         setPrice(newPrice);
-        var currencyLabel = document.getElementById("currency");
-        currencyLabel.style.display = "block";
       } finally {
         setLoading(false);
       }
@@ -200,11 +199,7 @@ const App = () => {
         {/* {!isAuthenticated && <Button title='Login' id='login' onClick={handleLogin} variant="outline-secondary"><BoxArrowInRight /></Button>}
         {isAuthenticated && <Button title='Logout' id='logout' onClick={handleLogout} variant="outline-secondary"><BoxArrowInLeft /></Button>} */}
         <br />
-        <div className='price-container' style={{ backgroundColor }}>
-          <label>Current ICP-USD Price:</label>
-          <label id="price">{price}</label>
-          <label id='currency'>USD</label>
-        </div>
+        <PriceContainer price={price} backgroundColor={backgroundColor} />
         <section id="principal"></section>
         <Dropdown id="main-dropdown">
           <Dropdown.Toggle as="a" id="dropdown-basic">
