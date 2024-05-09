@@ -12,6 +12,15 @@ Documentation:
 
 ![](public/icp-app.gif)
 
+Individual Screenshots:
+
+![](public/1.png)
+![](public/2.png)
+![](public/3.png)
+![](public/4.png)
+![](public/5.png)
+![](public/6.png)
+
 ## Running the project locally
 
 If you want to test your project locally, you can use the following commands, within icp_app/:

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { createActor, icp_app_backend } from 'declarations/icp_app_backend';
 import { AuthClient } from "@dfinity/auth-client"
 import { HttpAgent } from "@dfinity/agent";
-import { Button, Modal, Form } from 'react-bootstrap';
-import { BoxArrowInRight, BoxArrowInLeft } from 'react-bootstrap-icons';
+import { Button, Modal, Form, Dropdown } from 'react-bootstrap';
+import { BoxArrowInRight } from 'react-bootstrap-icons';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,7 +19,7 @@ const App = () => {
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
-  const [formData, setFormData] = useState({ name: '', email: '' });
+  const [formData, setFormData] = useState({ principal: '', name: '', email: '' });
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -28,12 +28,36 @@ const App = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const onProfileDialogSubmit = async (e) => {
     e.preventDefault();
     // Handle form submission here
-    console.log(formData);
-    handleClose(); // Close the dialog box after submission
+
+    const requestData = {
+      principal: userData.principal,
+      name: [formData.name],
+      email: [formData.email]
+    };
+    await icp_app_backend.updateUser(userData.principal, requestData)
+      .then(response => {
+        console.log(response);
+        const _userData = {
+          principal: userData.principal,
+          name: formData.name,
+          email: formData.email
+        };
+        setUserData(_userData);
+        localStorage.setItem('userData', JSON.stringify(_userData));
+        document.getElementById("principal").innerText = "Welcome " + _userData.name;
+        handleClose(); // Close the dialog box after submission
+      })
+      .catch(error => {
+        console.error(error);
+      });
   };
+
+  function handleDialogShow() {
+    setFormData(userData);
+  }
 
   const changeBackgroundColor = (color) => {
     setBackgroundColor(color); // Change color
@@ -69,23 +93,37 @@ const App = () => {
       console.log("logged in user principal", _principal);
 
       setIsAuthenticated(true);
-      document.getElementById("principal").innerText = "Welcome " + _principal;
 
       const _userData = {
-        "id": _principal
+        "principal": _principal
       };
-      setUserData(_userData);
+      // setUserData(_userData);
       // Save updated user data to local storage
-      localStorage.setItem('userData', JSON.stringify(_userData));
+      // localStorage.setItem('userData', JSON.stringify(_userData));
 
       const requestData = {
         principal: _principal,
-        name : [],
-        email : []
+        name: [],
+        email: []
       };
       await icp_app_backend.createUser(requestData)
-        .then(response => {
-          console.log(response);
+        .then(([response]) => {
+          const responseObj = {
+            principal: response.principal,
+            name: response.name.length > 0 ? response.name[0] : null,
+            email: response.email.length > 0 ? response.email[0] : null
+          };
+          console.log(responseObj);
+          setUserData(responseObj);
+          localStorage.setItem('userData', JSON.stringify(responseObj));
+
+          let _name = responseObj.principal;
+          if (responseObj.name && responseObj.name.length > 0) {
+            _name = responseObj.name;
+            document.getElementById("principal").innerText = "Welcome " + _name;
+          } else {
+            document.getElementById("principal").innerText = "Welcome. Please complete your profile";
+          }
         })
         .catch(error => {
           console.error(error);
@@ -115,9 +153,14 @@ const App = () => {
     if (userDataLS) {
       const userDataObj = JSON.parse(userDataLS);
       setUserData(userDataObj);
-      // Hide the button
       setIsAuthenticated(true);
-      document.getElementById("principal").innerText = "Welcome " + userDataObj.id;
+      let _name = userDataObj.principal;
+      if (userDataObj.name && userDataObj.name.length > 0) {
+        _name = userDataObj.name;
+        document.getElementById("principal").innerText = "Welcome " + _name;
+      } else {
+        document.getElementById("principal").innerText = "Welcome. Please complete your profile";
+      }
     }
     const fetchPrice = async () => {
       if (loading) return; // Cancel if waiting for a new count
@@ -154,9 +197,8 @@ const App = () => {
   return (
     <div className="App">
       <main>
-        {!isAuthenticated && <Button title='Login' id='login' onClick={handleLogin} variant="outline-secondary"><BoxArrowInRight /></Button>}
-        {isAuthenticated && <Button title='Logout' id='logout' onClick={handleLogout} variant="outline-secondary"><BoxArrowInLeft /></Button>}
-        <img src="/logo2.svg" alt="DFINITY logo" />
+        {/* {!isAuthenticated && <Button title='Login' id='login' onClick={handleLogin} variant="outline-secondary"><BoxArrowInRight /></Button>}
+        {isAuthenticated && <Button title='Logout' id='logout' onClick={handleLogout} variant="outline-secondary"><BoxArrowInLeft /></Button>} */}
         <br />
         <div className='price-container' style={{ backgroundColor }}>
           <label>Current ICP-USD Price:</label>
@@ -164,14 +206,32 @@ const App = () => {
           <label id='currency'>USD</label>
         </div>
         <section id="principal"></section>
-        {/* <Button variant="primary" onClick={handleShow}>Edit Profile</Button> */}
+        <Dropdown id="main-dropdown">
+          <Dropdown.Toggle as="a" id="dropdown-basic">
+            <BoxArrowInRight />
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            {!isAuthenticated && <Dropdown.Item onClick={handleLogin}>Login</Dropdown.Item>}
+            {isAuthenticated && <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>}
+            {isAuthenticated && <Dropdown.Item onClick={handleShow}>Edit Profile</Dropdown.Item>}
+          </Dropdown.Menu>
+        </Dropdown>
       </main>
-      <Modal show={show} onHide={handleClose}>
+      <Modal show={show} onShow={handleDialogShow} onHide={handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>Dialog Title</Modal.Title>
+          <Modal.Title style={{ fontSize: '20px' }}>Edit Profile</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={onProfileDialogSubmit}>
+            <Form.Group controlId="formPrincipal">
+              <Form.Label>Principal</Form.Label>
+              <Form.Control
+                type="text"
+                name="principal"
+                value={formData.principal}
+                disabled
+              />
+            </Form.Group>
             <Form.Group controlId="formName">
               <Form.Label>Name</Form.Label>
               <Form.Control
@@ -192,14 +252,14 @@ const App = () => {
                 onChange={handleChange}
               />
             </Form.Group>
-            <Button variant="primary" type="submit">
-              Save
-            </Button>
           </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>
             Cancel
+          </Button>
+          <Button variant="primary" onClick={onProfileDialogSubmit}>
+            Save
           </Button>
         </Modal.Footer>
       </Modal>

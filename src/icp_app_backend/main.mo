@@ -26,23 +26,24 @@ actor {
    */
 
   // Create a user.
-  public shared func createUser(user : Types.User) : async Types.Principal {
-    var _userExists = await getUser(user.principal);
-    if (_userExists == null) {
+  public shared func createUser(user : Types.User) : async ?Types.User {
+    var _user = await getUser(user.principal);
+    if (_user == null) {
       users := Trie.replace(
         users,
         key(user.principal),
         Text.equal,
         ?user,
       ).0;
-      print(debug_show ("Adding new user: " #user.principal));
+      _user:= ?user;
+      print(debug_show ("Creating new user: ") # debug_show (user));
     } else {
-      print(debug_show ("User already exists: " #user.principal));
+      print(debug_show ("User already exists: ") # debug_show (_user));
     };
-    return user.principal;
+    return _user;
   };
 
-  public shared func update(principal : Types.Principal, _user : Types.User) : async Bool {
+  public shared func updateUser(principal : Types.Principal, _user : Types.User) : async Bool {
     let result = Trie.find(users, key(principal), Text.equal);
     let exists = Option.isSome(result);
     if (exists) {
@@ -52,6 +53,10 @@ actor {
         Text.equal,
         ?_user,
       ).0;
+      // print(debug_show ("Updated user: "));
+      print(debug_show ("Updated user: ") # debug_show (_user));
+    } else {
+      print(debug_show ("User not found. nothing to update: " #principal));
     };
     return exists;
   };

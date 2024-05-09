@@ -5,7 +5,7 @@
 body {
   font-family: sans-serif;
   font-size: 1.5rem;
-  background-image: url(/icp.png) !important;
+  background-image: url(/background.jpeg) !important;
   background-repeat: no-repeat;
   background-position: center;
   background-attachment: fixed;
@@ -46,12 +46,31 @@ img {
   font-size: 20px;
 }
 
-#login, #logout {
+#login,
+#logout,
+#main-dropdown {
   position: absolute;
   top: 10px;
   right: 10px;
+  cursor: pointer;
 }
 
-#currency{
+#currency {
   display: none;
+}
+
+.dropdown-menu {
+  min-width: 6rem !important;
+}
+
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  font-size: 12px !important;
+}
+
+#dropdown-basic{
+  color: gray;
 }
