@@ -9,6 +9,12 @@ Documentation:
 - [Motoko Programming Language Guide](https://internetcomputer.org/docs/current/motoko/main/motoko)
 - [Motoko Language Quick Reference](https://internetcomputer.org/docs/current/motoko/main/language-manual)
 
+## Features
+- Login (and Logout) with Internet Identity
+- Using HTTPS outcalls to fetch ICP-USD price from Coinbase API with a background job, running at max once if there is at least 1 user active on the website, weather logged-in or not
+- Storing logged-in users information in stable Trie structure
+- Profile popup to save optional name and email in the stable Trie structure
+- Session state managment with React. Using local storage to maintain logged-in user principal (as well as profile information) and using it to restore in components if page is refreshed
 
 ![](public/icp-app.gif)
 
