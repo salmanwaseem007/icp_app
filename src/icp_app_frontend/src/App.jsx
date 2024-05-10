@@ -9,9 +9,7 @@ import PriceContainer from './PriceContainer/PriceContainer';
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [price, setPrice] = useState("loading");
-  const [previousPrice, setPreviousPrice] = useState(null);
-  const [backgroundColor, setBackgroundColor] = useState('');
+  const [price, setPrice] = useState(null);
   const [loading, setLoading] = useState(false);
   const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
   const internetIdentityUrl = network === "local" ? "http://" + process.env.CANISTER_ID_INTERNET_IDENTITY + ".localhost:4943/" : "https://identity.ic0.app"
@@ -59,13 +57,6 @@ const App = () => {
   function handleDialogShow() {
     setFormData(userData);
   }
-
-  const changeBackgroundColor = (color) => {
-    setBackgroundColor(color); // Change color
-    setTimeout(() => {
-      setBackgroundColor(null); // reset color
-    }, 600);
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -167,50 +158,43 @@ const App = () => {
       if (loading) return; // Cancel if waiting for a new count
       try {
         setLoading(true);
-        const response = await icp_app_backend.getICPPrice();
-        let jsonData = JSON.parse(response).data;
+        const jsonData = JSON.parse(await icp_app_backend.getICPPrice()).data;
         let newPrice = Number(jsonData.amount);
-
-        if (previousPrice !== null && newPrice > previousPrice) {
-          // If new price is greater, trigger fade effect
-          changeBackgroundColor('green');
-        } else if (previousPrice !== null && newPrice < previousPrice) {
-          changeBackgroundColor('red');
-        }
-
-        setPreviousPrice(newPrice);
         setPrice(newPrice);
       } finally {
         setLoading(false);
       }
     };
+    console.log('Price will be fetched every 2 second');
+
     const interval = setInterval(() => {
-      console.log('Price will be fetched every 2 second');
       fetchPrice();
     }, 2000);
     return () => {
       clearInterval(interval);
     };
-  }, [previousPrice]);
+  }, []);
 
   return (
     <div className="App">
       <main>
-        {/* {!isAuthenticated && <Button title='Login' id='login' onClick={handleLogin} variant="outline-secondary"><BoxArrowInRight /></Button>}
-        {isAuthenticated && <Button title='Logout' id='logout' onClick={handleLogout} variant="outline-secondary"><BoxArrowInLeft /></Button>} */}
         <br />
-        <PriceContainer price={price} backgroundColor={backgroundColor} />
+        <PriceContainer price={price} />
         <section id="principal"></section>
-        <Dropdown id="main-dropdown">
-          <Dropdown.Toggle as="a" id="dropdown-basic">
-            <BoxArrowInRight />
-          </Dropdown.Toggle>
-          <Dropdown.Menu>
-            {!isAuthenticated && <Dropdown.Item onClick={handleLogin}>Login</Dropdown.Item>}
-            {isAuthenticated && <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>}
-            {isAuthenticated && <Dropdown.Item onClick={handleShow}>Edit Profile</Dropdown.Item>}
-          </Dropdown.Menu>
-        </Dropdown>
+        {!isAuthenticated &&
+          <div id='loginContainer' title='Login'>
+            <a onClick={handleLogin}><BoxArrowInRight /></a>
+          </div>}
+        {isAuthenticated &&
+          <Dropdown id="main-dropdown">
+            <Dropdown.Toggle as="a" id="dropdown-basic">
+              <BoxArrowInRight />
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
+              <Dropdown.Item onClick={handleShow}>Edit Profile</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>}
       </main>
       <Modal show={show} onShow={handleDialogShow} onHide={handleClose}>
         <Modal.Header closeButton>
