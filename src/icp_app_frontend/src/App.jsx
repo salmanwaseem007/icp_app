@@ -30,7 +30,6 @@ const App = () => {
   };
   const onUserProfileDialogSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
 
     const requestData = {
       principal: userData.principal,
@@ -61,10 +60,8 @@ const App = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // create an auth client
     let authClient = await AuthClient.create();
 
-    // Check if the user is already authenticated in
     if (authClient.isAuthenticated() && ((await authClient.getIdentity().getPrincipal().isAnonymous()) === false)) {
       handleAuthenticated(authClient);
     } else {
@@ -83,15 +80,11 @@ const App = () => {
       const identity = await authClient.getIdentity();
       const _principal = identity.getPrincipal().toString();
       console.log("logged in user principal", _principal);
-
       setIsAuthenticated(true);
 
       const _userData = {
         "principal": _principal
       };
-      // setUserData(_userData);
-      // Save updated user data to local storage
-      // localStorage.setItem('userData', JSON.stringify(_userData));
 
       const requestData = {
         principal: _principal,
@@ -122,11 +115,8 @@ const App = () => {
         });
     }
 
-    // At this point we're authenticated, and we can get the identity from the auth client:
     const identity = authClient.getIdentity();
-    // Using the identity obtained from the auth client, we can create an agent to interact with the IC.
     const agent = new HttpAgent({ identity });
-    // Using the interface description of our webapp, we create an actor that we use to call the service methods.
     backendActor = createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
       agent,
     });
@@ -155,7 +145,7 @@ const App = () => {
       }
     }
     const fetchPrice = async () => {
-      if (loading) return; // Cancel if waiting for a new count
+      if (loading) return;
       try {
         setLoading(true);
         const jsonData = JSON.parse(await icp_app_backend.getICPPrice()).data;
@@ -166,7 +156,6 @@ const App = () => {
       }
     };
     console.log('Price will be fetched every 2 second');
-
     const interval = setInterval(() => {
       fetchPrice();
     }, 2000);
