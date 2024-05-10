@@ -2,60 +2,60 @@ import { useState, useEffect } from 'react';
 import { createActor, icp_app_backend } from 'declarations/icp_app_backend';
 import { AuthClient } from "@dfinity/auth-client"
 import { HttpAgent } from "@dfinity/agent";
-import { Button, Modal, Form, Dropdown } from 'react-bootstrap';
-import { BoxArrowInRight } from 'react-bootstrap-icons';
 import PriceContainer from './PriceContainer/PriceContainer';
+import UserProfileDialog from './UserProfileDialog/UserProfileDialog';
+import AppMenu from './AppMenu/AppMenu';
+import WelcomeMessage from './WelcomeMessage/WelcomeMessage';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [welcomeMessage, setWelcomeMessage] = useState(null);
   const [price, setPrice] = useState(null);
   const [loading, setLoading] = useState(false);
   const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
   const internetIdentityUrl = network === "local" ? "http://" + process.env.CANISTER_ID_INTERNET_IDENTITY + ".localhost:4943/" : "https://identity.ic0.app"
   let backendActor = icp_app_backend;
 
-  const [show, setShow] = useState(false);
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-  const [formData, setFormData] = useState({ principal: '', name: '', email: '' });
-  const handleChange = (e) => {
+  const [showUserProfileDialog, setShowUserProfileDialog] = useState(false);
+  const handleCloseUserProfileDialog = () => setShowUserProfileDialog(false);
+  const handleShowUserProfileDialog = () => setShowUserProfileDialog(true);
+  const [formDataUserProfileDialog, setFormDataUserProfileDialog] = useState({ principal: '', name: '', email: '' });
+  const handleChangeFormDataUserProfileDialog = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
+    setFormDataUserProfileDialog((prevData) => ({
       ...prevData,
       [name]: value,
     }));
   };
-
-  const onProfileDialogSubmit = async (e) => {
+  const onUserProfileDialogSubmit = async (e) => {
     e.preventDefault();
     // Handle form submission here
 
     const requestData = {
       principal: userData.principal,
-      name: [formData.name],
-      email: [formData.email]
+      name: [formDataUserProfileDialog.name],
+      email: [formDataUserProfileDialog.email]
     };
     await icp_app_backend.updateUser(userData.principal, requestData)
       .then(response => {
         console.log(response);
         const _userData = {
           principal: userData.principal,
-          name: formData.name,
-          email: formData.email
+          name: formDataUserProfileDialog.name,
+          email: formDataUserProfileDialog.email
         };
         setUserData(_userData);
         localStorage.setItem('userData', JSON.stringify(_userData));
-        document.getElementById("principal").innerText = "Welcome " + _userData.name;
-        handleClose(); // Close the dialog box after submission
+        setWelcomeMessage("Welcome " + _userData.name);
+        handleCloseUserProfileDialog(); // Close the dialog box after submission
       })
       .catch(error => {
         console.error(error);
       });
   };
-
   function handleDialogShow() {
-    setFormData(userData);
+    setFormDataUserProfileDialog(userData);
   }
 
   const handleLogin = async (e) => {
@@ -112,9 +112,9 @@ const App = () => {
           let _name = responseObj.principal;
           if (responseObj.name && responseObj.name.length > 0) {
             _name = responseObj.name;
-            document.getElementById("principal").innerText = "Welcome " + _name;
+            setWelcomeMessage("Welcome " + _name);
           } else {
-            document.getElementById("principal").innerText = "Welcome. Please complete your profile";
+            setWelcomeMessage("Welcome. Please complete your profile");
           }
         })
         .catch(error => {
@@ -149,9 +149,9 @@ const App = () => {
       let _name = userDataObj.principal;
       if (userDataObj.name && userDataObj.name.length > 0) {
         _name = userDataObj.name;
-        document.getElementById("principal").innerText = "Welcome " + _name;
+        setWelcomeMessage("Welcome " + _name);
       } else {
-        document.getElementById("principal").innerText = "Welcome. Please complete your profile";
+        setWelcomeMessage("Welcome. Please complete your profile");
       }
     }
     const fetchPrice = async () => {
@@ -177,74 +177,24 @@ const App = () => {
 
   return (
     <div className="App">
-      <main>
-        <br />
-        <PriceContainer price={price} />
-        <section id="principal"></section>
-        {!isAuthenticated &&
-          <div id='loginContainer' title='Login'>
-            <a onClick={handleLogin}><BoxArrowInRight /></a>
-          </div>}
-        {isAuthenticated &&
-          <Dropdown id="main-dropdown">
-            <Dropdown.Toggle as="a" id="dropdown-basic">
-              <BoxArrowInRight />
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
-              <Dropdown.Item onClick={handleShow}>Edit Profile</Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown>}
-      </main>
-      <Modal show={show} onShow={handleDialogShow} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title style={{ fontSize: '20px' }}>Edit Profile</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={onProfileDialogSubmit}>
-            <Form.Group controlId="formPrincipal">
-              <Form.Label>Principal</Form.Label>
-              <Form.Control
-                type="text"
-                name="principal"
-                value={formData.principal}
-                disabled
-              />
-            </Form.Group>
-            <Form.Group controlId="formName">
-              <Form.Label>Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter your name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-              />
-            </Form.Group>
-            <Form.Group controlId="formEmail">
-              <Form.Label>Email address</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="Enter your email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={onProfileDialogSubmit}>
-            Save
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <AppMenu
+        isAuthenticated={isAuthenticated}
+        handleLogin={handleLogin}
+        handleLogout={handleLogout}
+        handleShowUserProfileDialog={handleShowUserProfileDialog}
+      />
+      <PriceContainer price={price} />
+      <WelcomeMessage message={welcomeMessage} />
+      <UserProfileDialog
+        showUserProfileDialog={showUserProfileDialog}
+        handleCloseUserProfileDialog={handleCloseUserProfileDialog}
+        handleDialogShow={handleDialogShow}
+        formDataUserProfileDialog={formDataUserProfileDialog}
+        handleChangeFormDataUserProfileDialog={handleChangeFormDataUserProfileDialog}
+        onUserProfileDialogSubmit={onUserProfileDialogSubmit}
+      />
     </div>
   );
 }
-
 
 export default App;

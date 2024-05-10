@@ -1,0 +1,41 @@
+#loginContainer,
+#main-dropdown {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+  color: gray;
+  font-size: 1.5rem;
+}
+
+.dropdown-menu {
+  min-width: 6rem !important;
+}
+
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  font-size: 12px !important;
+}
+
+#dropdown-basic {
+  color: gray;
+}
+
+.dropdown-menu {
+  min-width: 6rem !important;
+}
+
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  font-size: 12px !important;
+}
+
+#dropdown-basic {
+  color: gray;
+}
