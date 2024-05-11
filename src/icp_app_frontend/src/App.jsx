@@ -7,9 +7,11 @@ import UserProfileDialog from './UserProfileDialog/UserProfileDialog';
 import AppMenu from './AppMenu/AppMenu';
 import WelcomeMessage from './WelcomeMessage/WelcomeMessage';
 import LoadingSpinner from './LoadingSpinner/LoadingSpinner'
+import ToastComponent from './ToastComponent/ToastComponent'
 
 const App = () => {
   const [isLoading, setLoading] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const [welcomeMessage, setWelcomeMessage] = useState(null);
@@ -51,6 +53,10 @@ const App = () => {
         setWelcomeMessage("Welcome " + _userData.name);
         handleCloseUserProfileDialog(); // Close the dialog box after submission
         setLoading(false);
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+        }, 1500);
       }).catch(error => {
         console.error(error);
         setLoading(false);
@@ -196,6 +202,7 @@ const App = () => {
         onUserProfileDialogSubmit={onUserProfileDialogSubmit}
       />
       <LoadingSpinner isLoading={isLoading} />
+      <ToastComponent showToast={showToast} />
     </div>
   );
 }
