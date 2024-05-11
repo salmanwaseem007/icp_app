@@ -6,13 +6,14 @@ import PriceContainer from './PriceContainer/PriceContainer';
 import UserProfileDialog from './UserProfileDialog/UserProfileDialog';
 import AppMenu from './AppMenu/AppMenu';
 import WelcomeMessage from './WelcomeMessage/WelcomeMessage';
+import LoadingSpinner from './LoadingSpinner/LoadingSpinner'
 
 const App = () => {
+  const [isLoading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const [welcomeMessage, setWelcomeMessage] = useState(null);
   const [price, setPrice] = useState(null);
-  const [loading, setLoading] = useState(false);
   const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
   const internetIdentityUrl = network === "local" ? "http://" + process.env.CANISTER_ID_INTERNET_IDENTITY + ".localhost:4943/" : "https://identity.ic0.app"
   let backendActor = icp_app_backend;
@@ -30,6 +31,7 @@ const App = () => {
   };
   const onUserProfileDialogSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     const requestData = {
       principal: userData.principal,
@@ -48,9 +50,10 @@ const App = () => {
         localStorage.setItem('userData', JSON.stringify(_userData));
         setWelcomeMessage("Welcome " + _userData.name);
         handleCloseUserProfileDialog(); // Close the dialog box after submission
-      })
-      .catch(error => {
+        setLoading(false);
+      }).catch(error => {
         console.error(error);
+        setLoading(false);
       });
   };
   function handleDialogShow() {
@@ -146,7 +149,6 @@ const App = () => {
     }
 
     const fetchPrice = async () => {
-      if (loading) return;
       try {
         const response = await fetch('https://api.coinbase.com/v2/prices/ICP-USD/spot/');
         const data = await response.json();
@@ -154,19 +156,15 @@ const App = () => {
         setPrice(newPrice);
       } catch (error) {
         console.error('Error fetching price:', error);
-      } finally {
-        setLoading(false);
       }
     };
     const fetchPriceBackend = async () => {
-      if (loading) return;
       try {
-        setLoading(true);
         const jsonData = JSON.parse(await icp_app_backend.getICPPrice()).data;
         let newPrice = Number(jsonData.amount);
         setPrice(newPrice);
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching price:', error);
       }
     };
     console.log('Price will be fetched every 2 second');
@@ -174,6 +172,7 @@ const App = () => {
       fetchPrice();
     }, 2000);
     return () => {
+      fetchPrice();
       clearInterval(interval);
     };
   }, []);
@@ -196,6 +195,7 @@ const App = () => {
         handleChangeFormDataUserProfileDialog={handleChangeFormDataUserProfileDialog}
         onUserProfileDialogSubmit={onUserProfileDialogSubmit}
       />
+      <LoadingSpinner isLoading={isLoading} />
     </div>
   );
 }
