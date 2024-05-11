@@ -54,16 +54,18 @@ const App = () => {
         setWelcomeMessage("Welcome " + _userData.name);
         handleCloseUserProfileDialog(); // Close the dialog box after submission
         setLoading(false);
-        setToastMessage('Profile saved successfully!')
-        setShowToast(true);
-        setTimeout(() => {
-          setShowToast(false);
-        }, 1500);
+        loadToast('Profile saved successfully!')
+
       }).catch(error => {
         console.error(error);
         setLoading(false);
       });
   };
+
+  function loadToast(msg) {
+    setToastMessage(msg)
+    setShowToast(true);
+  }
   function handleDialogShow() {
     setFormDataUserProfileDialog(userData);
   }
@@ -204,7 +206,7 @@ const App = () => {
         onUserProfileDialogSubmit={onUserProfileDialogSubmit}
       />
       <LoadingSpinner isLoading={isLoading} />
-      <ToastComponent showToast={showToast} toastMessage={toastMessage} />
+      <ToastComponent showToast={showToast} setShowToast={setShowToast} toastMessage={toastMessage} />
     </div>
   );
 }
