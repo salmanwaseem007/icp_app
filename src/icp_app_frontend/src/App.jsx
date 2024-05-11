@@ -144,7 +144,21 @@ const App = () => {
         setWelcomeMessage("Welcome. Please complete your profile");
       }
     }
+
     const fetchPrice = async () => {
+      if (loading) return;
+      try {
+        const response = await fetch('https://api.coinbase.com/v2/prices/ICP-USD/spot/');
+        const data = await response.json();
+        let newPrice = Number(data.data.amount);
+        setPrice(newPrice);
+      } catch (error) {
+        console.error('Error fetching price:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const fetchPriceBackend = async () => {
       if (loading) return;
       try {
         setLoading(true);
