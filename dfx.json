@@ -7,7 +7,7 @@
     "icp_app_frontend": {
       "dependencies": [
         "icp_app_backend",
-		"internet_identity"
+        "internet_identity"
       ],
       "source": [
         "src/icp_app_frontend/dist"
@@ -18,7 +18,7 @@
     "internet_identity": {
       "type": "custom",
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
+      "wasm": "internet_identity_dev.wasm",
       "remote": {
         "id": {
           "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"

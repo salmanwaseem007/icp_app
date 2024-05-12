@@ -182,6 +182,5 @@ actor {
     };
   };
 
-  // disabling recurring backend price update due to cycles consumption
-  // ignore Timer.recurringTimer<system>(#seconds 4, recurringICPPriceUpdate);
+  ignore Timer.recurringTimer<system>(#seconds 4, recurringICPPriceUpdate);
 };

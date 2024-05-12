@@ -80,7 +80,6 @@ const App = () => {
     if (authClient.isAuthenticated() && ((await authClient.getIdentity().getPrincipal().isAnonymous()) === false)) {
       handleAuthenticated(authClient);
     } else {
-      // Log in
       await new Promise((resolve) => {
         authClient.login({
           identityProvider: internetIdentityUrl,
@@ -183,10 +182,10 @@ const App = () => {
     };
     console.log('Price will be fetched every 2 second');
     const interval = setInterval(() => {
-      fetchPrice();
+      fetchPriceBackend();
     }, 2000);
     return () => {
-      fetchPrice();
+      fetchPriceBackend();
       clearInterval(interval);
     };
   }, []);
