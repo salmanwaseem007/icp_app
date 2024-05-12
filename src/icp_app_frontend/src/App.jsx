@@ -51,8 +51,10 @@ const App = () => {
         };
         setUserData(_userData);
         localStorage.setItem('userData', JSON.stringify(_userData));
-        setWelcomeMessage("Welcome " + _userData.name);
-        handleCloseUserProfileDialog(); // Close the dialog box after submission
+        if (formDataUserProfileDialog.name && formDataUserProfileDialog.name.length > 0) {
+          setWelcomeMessage("Welcome " + _userData.name);
+        }
+        handleCloseUserProfileDialog();
         setLoading(false);
         loadToast('Profile saved successfully!')
 
@@ -120,7 +122,7 @@ const App = () => {
             _name = responseObj.name;
             setWelcomeMessage("Welcome " + _name);
           } else {
-            setWelcomeMessage("Welcome. Please complete your profile");
+            setWelcomeMessage(null);
           }
         })
         .catch(error => {
@@ -139,6 +141,8 @@ const App = () => {
     const authClient = await AuthClient.create();
     await authClient.logout();
     setUserData(null);
+    setIsAuthenticated(false);
+    setWelcomeMessage(null);
     localStorage.removeItem('userData');
     window.location.reload();
   };
@@ -154,7 +158,7 @@ const App = () => {
         _name = userDataObj.name;
         setWelcomeMessage("Welcome " + _name);
       } else {
-        setWelcomeMessage("Welcome. Please complete your profile");
+        setWelcomeMessage(null);
       }
     }
 
@@ -196,7 +200,7 @@ const App = () => {
         handleShowUserProfileDialog={handleShowUserProfileDialog}
       />
       <PriceContainer price={price} />
-      <WelcomeMessage message={welcomeMessage} />
+      <WelcomeMessage message={welcomeMessage} isAuthenticated={isAuthenticated} handleShowUserProfileDialog={handleShowUserProfileDialog} />
       <UserProfileDialog
         showUserProfileDialog={showUserProfileDialog}
         handleCloseUserProfileDialog={handleCloseUserProfileDialog}
