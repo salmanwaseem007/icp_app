@@ -7,6 +7,7 @@ import Bool "mo:base/Bool";
 // import JSON "mo:serde/JSON";
 import Trie "mo:base/Trie";
 import Option "mo:base/Option";
+import Principal "mo:base/Principal";
 import Types "Types";
 
 actor {
@@ -25,6 +26,11 @@ actor {
    * High-Level API
    */
 
+  public shared query ({ caller }) func getUserPrincipal(name : Text) : async Text {
+     print(debug_show ("logged in user: ")  # Principal.toText(caller));
+    return "Hello, " # name # "! " # "Your PrincipalId is: " # Principal.toText(caller);
+  };
+
   // Create a user.
   public shared func createUser(user : Types.User) : async ?Types.User {
     var _user = await getUser(user.principal);
@@ -35,7 +41,7 @@ actor {
         Text.equal,
         ?user,
       ).0;
-      _user:= ?user;
+      _user := ?user;
       print(debug_show ("Creating new user: ") # debug_show (user));
     } else {
       print(debug_show ("User already exists: ") # debug_show (_user));

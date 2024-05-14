@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { createActor, icp_app_backend } from 'declarations/icp_app_backend';
+import { createActor } from 'declarations/icp_app_backend';
+
 import { AuthClient } from "@dfinity/auth-client"
 import { HttpAgent } from "@dfinity/agent";
 import PriceContainer from './PriceContainer/PriceContainer';
@@ -19,7 +20,6 @@ const App = () => {
   const [price, setPrice] = useState(null);
   const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
   const internetIdentityUrl = network === "local" ? "http://" + process.env.CANISTER_ID_INTERNET_IDENTITY + ".localhost:4943/" : "https://identity.ic0.app"
-  let backendActor = icp_app_backend;
 
   const [showUserProfileDialog, setShowUserProfileDialog] = useState(false);
   const handleCloseUserProfileDialog = () => setShowUserProfileDialog(false);
@@ -41,7 +41,9 @@ const App = () => {
       name: [formDataUserProfileDialog.name],
       email: [formDataUserProfileDialog.email]
     };
-    await icp_app_backend.updateUser(userData.principal, requestData)
+    var backendActor = await getBackendActor(userData.principal);
+
+    backendActor.updateUser(userData.principal, requestData)
       .then(response => {
         console.log(response);
         const _userData = {
@@ -53,11 +55,12 @@ const App = () => {
         localStorage.setItem('userData', JSON.stringify(_userData));
         if (formDataUserProfileDialog.name && formDataUserProfileDialog.name.length > 0) {
           setWelcomeMessage("Welcome " + _userData.name);
+        } else {
+          setWelcomeMessage(null);
         }
         handleCloseUserProfileDialog();
         setLoading(false);
         loadToast('Profile saved successfully!')
-
       }).catch(error => {
         console.error(error);
         setLoading(false);
@@ -70,6 +73,22 @@ const App = () => {
   }
   function handleDialogShow() {
     setFormDataUserProfileDialog(userData);
+  }
+
+  async function getBackendActor(_principal) {
+    let principal = _principal;
+    if (_principal == null) {
+      const userDataLS = localStorage.getItem("userData");
+      if (userDataLS) {
+        const userDataObj = JSON.parse(userDataLS);
+        principal = userDataObj.principal;
+      }
+    }
+    const agent = new HttpAgent({ principal });
+    let actor = await createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
+      agent,
+    });
+    return actor;
   }
 
   const handleLogin = async (e) => {
@@ -91,49 +110,39 @@ const App = () => {
     }
 
     async function handleAuthenticated(authClient) {
-      const identity = await authClient.getIdentity();
+      const identity = authClient.getIdentity();
       const _principal = identity.getPrincipal().toString();
-      console.log("logged in user principal", _principal);
+      console.log("Llogged in user principal: ", _principal);
       setIsAuthenticated(true);
-
-      const _userData = {
-        "principal": _principal
-      };
 
       const requestData = {
         principal: _principal,
         name: [],
         email: []
       };
-      await icp_app_backend.createUser(requestData)
-        .then(([response]) => {
-          const responseObj = {
-            principal: response.principal,
-            name: response.name.length > 0 ? response.name[0] : null,
-            email: response.email.length > 0 ? response.email[0] : null
-          };
-          console.log(responseObj);
-          setUserData(responseObj);
-          localStorage.setItem('userData', JSON.stringify(responseObj));
+      var backendActor = await getBackendActor(_principal);
 
-          let _name = responseObj.principal;
-          if (responseObj.name && responseObj.name.length > 0) {
-            _name = responseObj.name;
-            setWelcomeMessage("Welcome " + _name);
-          } else {
-            setWelcomeMessage(null);
-          }
-        })
-        .catch(error => {
-          console.error(error);
-        });
+      backendActor.createUser(requestData).then(([response]) => {
+        const responseObj = {
+          principal: response.principal,
+          name: response.name.length > 0 ? response.name[0] : null,
+          email: response.email.length > 0 ? response.email[0] : null
+        };
+        console.log(responseObj);
+        setUserData(responseObj);
+        localStorage.setItem('userData', JSON.stringify(responseObj));
+
+        let _name = responseObj.principal;
+        if (responseObj.name && responseObj.name.length > 0) {
+          _name = responseObj.name;
+          setWelcomeMessage("Welcome " + _name);
+        } else {
+          setWelcomeMessage(null);
+        }
+      }).catch(error => {
+        console.error(error);
+      });
     }
-
-    const identity = authClient.getIdentity();
-    const agent = new HttpAgent({ identity });
-    backendActor = createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
-      agent,
-    });
   };
 
   const handleLogout = async (e) => {
@@ -173,7 +182,8 @@ const App = () => {
     };
     const fetchPriceBackend = async () => {
       try {
-        const jsonData = JSON.parse(await icp_app_backend.getICPPrice()).data;
+        var backendActor = await getBackendActor();
+        const jsonData = JSON.parse(await backendActor.getICPPrice()).data;
         let newPrice = Number(jsonData.amount);
         setPrice(newPrice);
       } catch (error) {
@@ -196,8 +206,7 @@ const App = () => {
         isAuthenticated={isAuthenticated}
         handleLogin={handleLogin}
         handleLogout={handleLogout}
-        handleShowUserProfileDialog={handleShowUserProfileDialog}
-      />
+        handleShowUserProfileDialog={handleShowUserProfileDialog} />
       <PriceContainer price={price} />
       <WelcomeMessage message={welcomeMessage} isAuthenticated={isAuthenticated} handleShowUserProfileDialog={handleShowUserProfileDialog} />
       <UserProfileDialog
@@ -206,8 +215,7 @@ const App = () => {
         handleDialogShow={handleDialogShow}
         formDataUserProfileDialog={formDataUserProfileDialog}
         handleChangeFormDataUserProfileDialog={handleChangeFormDataUserProfileDialog}
-        onUserProfileDialogSubmit={onUserProfileDialogSubmit}
-      />
+        onUserProfileDialogSubmit={onUserProfileDialogSubmit} />
       <LoadingSpinner isLoading={isLoading} />
       <ToastComponent showToast={showToast} setShowToast={setShowToast} toastMessage={toastMessage} />
     </div>
