@@ -74,7 +74,6 @@ module Types {
     public type Principal = Text;
 
     public type User = {
-        principal : Text;
         name : ?Text;
         email : ?Text
     };

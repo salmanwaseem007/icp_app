@@ -27,17 +27,19 @@ actor {
    */
 
   public shared query ({ caller }) func getUserPrincipal(name : Text) : async Text {
-     print(debug_show ("logged in user: ")  # Principal.toText(caller));
+    print(debug_show ("logged in user: ") # Principal.toText(caller));
     return "Hello, " # name # "! " # "Your PrincipalId is: " # Principal.toText(caller);
   };
 
   // Create a user.
-  public shared func createUser(user : Types.User) : async ?Types.User {
-    var _user = await getUser(user.principal);
+  public shared ({ caller }) func createUser(user : Types.User) : async ?Types.User {
+    print(debug_show ("createUser: ") # Principal.toText(caller));
+    var principal = Principal.toText(caller);
+    var _user = await getUser(principal);
     if (_user == null) {
       users := Trie.replace(
         users,
-        key(user.principal),
+        key(principal),
         Text.equal,
         ?user,
       ).0;
@@ -49,7 +51,9 @@ actor {
     return _user;
   };
 
-  public shared func updateUser(principal : Types.Principal, _user : Types.User) : async Bool {
+  public shared  ({ caller }) func updateUser(_user : Types.User) : async Bool {
+    print(debug_show ("updateUser: ") # Principal.toText(caller));
+    var principal = Principal.toText(caller);
     let result = Trie.find(users, key(principal), Text.equal);
     let exists = Option.isSome(result);
     if (exists) {

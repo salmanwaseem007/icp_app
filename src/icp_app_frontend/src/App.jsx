@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { createActor } from 'declarations/icp_app_backend';
-
 import { AuthClient } from "@dfinity/auth-client"
 import { HttpAgent } from "@dfinity/agent";
 import PriceContainer from './PriceContainer/PriceContainer';
@@ -20,7 +19,7 @@ const App = () => {
   const [price, setPrice] = useState(null);
   const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
   const internetIdentityUrl = network === "local" ? "http://" + process.env.CANISTER_ID_INTERNET_IDENTITY + ".localhost:4943/" : "https://identity.ic0.app"
-
+  var backendActor;
   const [showUserProfileDialog, setShowUserProfileDialog] = useState(false);
   const handleCloseUserProfileDialog = () => setShowUserProfileDialog(false);
   const handleShowUserProfileDialog = () => setShowUserProfileDialog(true);
@@ -37,15 +36,13 @@ const App = () => {
     setLoading(true);
 
     const requestData = {
-      principal: userData.principal,
       name: [formDataUserProfileDialog.name],
       email: [formDataUserProfileDialog.email]
     };
     var backendActor = await getBackendActor(userData.principal);
 
-    backendActor.updateUser(userData.principal, requestData)
+    backendActor.updateUser(requestData)
       .then(response => {
-        console.log(response);
         const _userData = {
           principal: userData.principal,
           name: formDataUserProfileDialog.name,
@@ -112,19 +109,27 @@ const App = () => {
     async function handleAuthenticated(authClient) {
       const identity = authClient.getIdentity();
       const _principal = identity.getPrincipal().toString();
-      console.log("Llogged in user principal: ", _principal);
+      console.log("authClient.getIdentity().getPrincipal().isAnonymous()", await authClient.getIdentity().getPrincipal().isAnonymous());
+      console.log("Logged in user principal: ", _principal);
+
       setIsAuthenticated(true);
 
       const requestData = {
-        principal: _principal,
         name: [],
         email: []
       };
-      var backendActor = await getBackendActor(_principal);
+      // var backendActor = await getBackendActor(_principal);
+      const agent = new HttpAgent({ _principal });
+      let actor = await createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
+        agent,
+      });
 
-      backendActor.createUser(requestData).then(([response]) => {
+      actor.getUserPrincipal('hello').then(response => {
+        console.log('getUserPrincipal', response);
+      });
+      actor.createUser(requestData).then(([response]) => {
         const responseObj = {
-          principal: response.principal,
+          principal: _principal,
           name: response.name.length > 0 ? response.name[0] : null,
           email: response.email.length > 0 ? response.email[0] : null
         };
@@ -191,8 +196,13 @@ const App = () => {
       }
     };
     console.log('Price will be fetched every 2 second');
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       fetchPriceBackend();
+
+      // var backendActor = await getBackendActor();
+      // backendActor.getUserPrincipal('hello').then(response => {
+      //   console.log('getUserPrincipal', response);
+      // });
     }, 2000);
     return () => {
       fetchPriceBackend();
@@ -208,7 +218,7 @@ const App = () => {
         handleLogout={handleLogout}
         handleShowUserProfileDialog={handleShowUserProfileDialog} />
       <PriceContainer price={price} />
-      <WelcomeMessage message={welcomeMessage} isAuthenticated={isAuthenticated} handleShowUserProfileDialog={handleShowUserProfileDialog} />
+      <WelcomeMessage message={welcomeMessage} isAuthenticated={isAuthenticated} handleShowUserProfileDialog={handleShowUserProfileDialog} handleLogin={handleLogin} />
       <UserProfileDialog
         showUserProfileDialog={showUserProfileDialog}
         handleCloseUserProfileDialog={handleCloseUserProfileDialog}
