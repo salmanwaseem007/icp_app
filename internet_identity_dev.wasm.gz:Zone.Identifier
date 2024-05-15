@@ -1,3 +1,0 @@
-[ZoneTransfer]
-ZoneId=3
-HostUrl=https://objects.githubusercontent.com/github-production-release-asset-2e65be/356347737/a6d1e17c-e2af-442d-8a06-7c0028773b4b?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20240512%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240512T142813Z&X-Amz-Expires=300&X-Amz-Signature=b127bd93d43eb3500a75e823c19a3ba23c80656a6689b1a859fd48782dc04cb9&X-Amz-SignedHeaders=host&actor_id=49980019&key_id=0&repo_id=356347737&response-content-disposition=attachment%3B%20filename%3Dinternet_identity_dev.wasm.gz&response-content-type=application%2Foctet-stream
