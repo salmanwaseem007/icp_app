@@ -178,8 +178,13 @@ actor {
   private func recurringICPPriceUpdate() : async () {
     if (requirePriceUpdate) {
       print("Fetching price in timer, requirePriceUpdate value is true");
-      icpPrice := await getPriceFromCoinBase("ICP-USD");
-      print(debug_show (icpPrice));
+      try {
+        icpPrice := await getPriceFromCoinBase("ICP-USD");
+        print(debug_show (icpPrice));
+      } catch (e) {
+        print(debug_show ("error while calling coinbase api"));
+        icpPrice := "{\"data\":{\"amount\":\"12.5835\",\"base\":\"ICP\",\"currency\":\"USD\"}}";
+      };
       // let btcPrice : Text = await getPriceFromCoinBase("BTC-USD");
       // print(debug_show (btcPrice));
 
