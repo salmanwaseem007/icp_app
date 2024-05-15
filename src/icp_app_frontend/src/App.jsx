@@ -19,7 +19,8 @@ const App = () => {
   const [price, setPrice] = useState(null);
   const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
   const internetIdentityUrl = network === "local" ? "http://" + process.env.CANISTER_ID_INTERNET_IDENTITY + ".localhost:4943/" : "https://identity.ic0.app"
-  var backendActor;
+  const [backendActor, setBackendActor] = useState(null);
+
   const [showUserProfileDialog, setShowUserProfileDialog] = useState(false);
   const handleCloseUserProfileDialog = () => setShowUserProfileDialog(false);
   const handleShowUserProfileDialog = () => setShowUserProfileDialog(true);
@@ -39,7 +40,6 @@ const App = () => {
       name: [formDataUserProfileDialog.name],
       email: [formDataUserProfileDialog.email]
     };
-    var backendActor = await getBackendActor(userData.principal);
 
     backendActor.updateUser(requestData)
       .then(response => {
@@ -72,22 +72,6 @@ const App = () => {
     setFormDataUserProfileDialog(userData);
   }
 
-  async function getBackendActor(_principal) {
-    let principal = _principal;
-    if (_principal == null) {
-      const userDataLS = localStorage.getItem("userData");
-      if (userDataLS) {
-        const userDataObj = JSON.parse(userDataLS);
-        principal = userDataObj.principal;
-      }
-    }
-    const agent = new HttpAgent({ principal });
-    let actor = await createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
-      agent,
-    });
-    return actor;
-  }
-
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -109,8 +93,6 @@ const App = () => {
     async function handleAuthenticated(authClient) {
       const identity = authClient.getIdentity();
       const _principal = identity.getPrincipal().toString();
-      console.log("authClient.getIdentity().getPrincipal().isAnonymous()", await authClient.getIdentity().getPrincipal().isAnonymous());
-      console.log("Logged in user principal: ", _principal);
 
       setIsAuthenticated(true);
 
@@ -118,16 +100,13 @@ const App = () => {
         name: [],
         email: []
       };
-      // var backendActor = await getBackendActor(_principal);
-      const agent = new HttpAgent({ _principal });
-      let actor = await createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
+      const agent = new HttpAgent({ identity });
+      let _backendActor = await createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
         agent,
       });
+      setBackendActor(_backendActor);
 
-      actor.getUserPrincipal('hello').then(response => {
-        console.log('getUserPrincipal', response);
-      });
-      actor.createUser(requestData).then(([response]) => {
+      _backendActor.createUser(requestData).then(([response]) => {
         const responseObj = {
           principal: _principal,
           name: response.name.length > 0 ? response.name[0] : null,
@@ -160,54 +139,69 @@ const App = () => {
     window.location.reload();
   };
 
+  const fetchPrice = async () => {
+    try {
+      const response = await fetch('https://api.coinbase.com/v2/prices/ICP-USD/spot/');
+      const data = await response.json();
+      let newPrice = Number(data.data.amount);
+      setPrice(newPrice);
+    } catch (error) {
+      console.error('Error fetching price:', error);
+    }
+  };
+
   useEffect(() => {
-    const userDataLS = localStorage.getItem("userData");
-    if (userDataLS) {
-      const userDataObj = JSON.parse(userDataLS);
-      setUserData(userDataObj);
-      setIsAuthenticated(true);
-      let _name = userDataObj.principal;
-      if (userDataObj.name && userDataObj.name.length > 0) {
-        _name = userDataObj.name;
-        setWelcomeMessage("Welcome " + _name);
-      } else {
-        setWelcomeMessage(null);
+    console.log('Price will be fetched every 2 second');
+    async function loadBackend() {
+      const authClient = await AuthClient.create();
+      var _isAuthenticated = authClient.isAuthenticated() && ((await authClient.getIdentity().getPrincipal().isAnonymous()) === false);
+      try {
+        const identity = authClient.getIdentity();
+        const agent = new HttpAgent({ identity });
+        let _backendActor = createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
+          agent,
+        });
+        setBackendActor(_backendActor);
+        setIsAuthenticated(_isAuthenticated);
+        const userDataLS = localStorage.getItem("userData");
+        if (userDataLS) {
+          const userDataObj = JSON.parse(userDataLS);
+          setUserData(userDataObj);
+          let _name = userDataObj.principal;
+          if (userDataObj.name && userDataObj.name.length > 0) {
+            _name = userDataObj.name;
+            setWelcomeMessage("Welcome " + _name);
+          } else {
+            setWelcomeMessage(null);
+          }
+        }
+
+        await fetchICPPrice();
+        const interval = setInterval(async () => {
+          await fetchICPPrice();
+        }, 2000);
+        return () => {
+          clearInterval(interval);
+        };
+      } catch (error) {
+        console.error('useEffect, isAuthenticated :', error);
       }
     }
 
-    const fetchPrice = async () => {
-      try {
-        const response = await fetch('https://api.coinbase.com/v2/prices/ICP-USD/spot/');
-        const data = await response.json();
-        let newPrice = Number(data.data.amount);
-        setPrice(newPrice);
-      } catch (error) {
-        console.error('Error fetching price:', error);
-      }
-    };
-    const fetchPriceBackend = async () => {
-      try {
-        var backendActor = await getBackendActor();
-        const jsonData = JSON.parse(await backendActor.getICPPrice()).data;
-        let newPrice = Number(jsonData.amount);
-        setPrice(newPrice);
-      } catch (error) {
-        console.error('Error fetching price:', error);
-      }
-    };
-    console.log('Price will be fetched every 2 second');
-    const interval = setInterval(async () => {
-      fetchPriceBackend();
+    const fetchICPPrice = async () => {
+      // creating new actor here to track user between login and logout.
+      const authClient = await AuthClient.create();
+      const identity = authClient.getIdentity();
+      const agent = new HttpAgent({ identity });
+      let actor = createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
+        agent,
+      });
+      const jsonData = JSON.parse(await actor.getICPPrice()).data;
+      let newPrice = Number(jsonData.amount);
+      setPrice(newPrice);
+    }
 
-      // var backendActor = await getBackendActor();
-      // backendActor.getUserPrincipal('hello').then(response => {
-      //   console.log('getUserPrincipal', response);
-      // });
-    }, 2000);
-    return () => {
-      fetchPriceBackend();
-      clearInterval(interval);
-    };
+    loadBackend();
   }, []);
 
   return (

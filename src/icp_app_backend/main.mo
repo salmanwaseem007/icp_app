@@ -27,7 +27,7 @@ actor {
    */
 
   public shared query ({ caller }) func getUserPrincipal(name : Text) : async Text {
-    print(debug_show ("logged in user: ") # Principal.toText(caller));
+    print(debug_show ("getUserPrincipal: ") # Principal.toText(caller));
     return "Hello, " # name # "! " # "Your PrincipalId is: " # Principal.toText(caller);
   };
 
@@ -51,7 +51,7 @@ actor {
     return _user;
   };
 
-  public shared  ({ caller }) func updateUser(_user : Types.User) : async Bool {
+  public shared ({ caller }) func updateUser(_user : Types.User) : async Bool {
     print(debug_show ("updateUser: ") # Principal.toText(caller));
     var principal = Principal.toText(caller);
     let result = Trie.find(users, key(principal), Text.equal);
@@ -166,9 +166,11 @@ actor {
     decoded_text;
   };
 
-  public shared func getICPPrice() : async Text {
+  public shared ({ caller }) func getICPPrice() : async Text {
     // public shared function, to update in all nodes in the subnet
     // requiring price to be updated since we have an active user calling this method through frontend canister
+    print(debug_show ("getICPPrice: ") # Principal.toText(caller));
+
     requirePriceUpdate := true;
     icpPrice;
   };
