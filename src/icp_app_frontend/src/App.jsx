@@ -32,47 +32,8 @@ const App = () => {
       [name]: value,
     }));
   };
-  const onUserProfileDialogSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
 
-    const requestData = {
-      name: [formDataUserProfileDialog.name],
-      email: [formDataUserProfileDialog.email]
-    };
-
-    backendActor.updateUser(requestData)
-      .then(response => {
-        const _userData = {
-          principal: userData.principal,
-          name: formDataUserProfileDialog.name,
-          email: formDataUserProfileDialog.email
-        };
-        setUserData(_userData);
-        localStorage.setItem('userData', JSON.stringify(_userData));
-        if (formDataUserProfileDialog.name && formDataUserProfileDialog.name.length > 0) {
-          setWelcomeMessage("Welcome " + _userData.name);
-        } else {
-          setWelcomeMessage(null);
-        }
-        handleCloseUserProfileDialog();
-        setLoading(false);
-        loadToast('Profile saved successfully!')
-      }).catch(error => {
-        console.error(error);
-        setLoading(false);
-      });
-  };
-
-  function loadToast(msg) {
-    setToastMessage(msg)
-    setShowToast(true);
-  }
-  function handleDialogShow() {
-    setFormDataUserProfileDialog(userData);
-  }
-
-  const handleLogin = async (e) => {
+  async function handleLogin(e) {
     e.preventDefault();
 
     let authClient = await AuthClient.create();
@@ -127,9 +88,9 @@ const App = () => {
         console.error(error);
       });
     }
-  };
+  }
 
-  const handleLogout = async (e) => {
+  async function handleLogout(e) {
     const authClient = await AuthClient.create();
     await authClient.logout();
     setUserData(null);
@@ -137,22 +98,80 @@ const App = () => {
     setWelcomeMessage(null);
     localStorage.removeItem('userData');
     window.location.reload();
-  };
+  }
 
-  const fetchPrice = async () => {
-    try {
-      const response = await fetch('https://api.coinbase.com/v2/prices/ICP-USD/spot/');
-      const data = await response.json();
-      let newPrice = Number(data.data.amount);
-      setPrice(newPrice);
-    } catch (error) {
-      console.error('Error fetching price:', error);
+  function handleDialogShow() {
+    setFormDataUserProfileDialog(userData);
+  }
+
+  function onUserProfileDialogSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+
+    const requestData = {
+      name: [formDataUserProfileDialog.name],
+      email: [formDataUserProfileDialog.email]
+    };
+
+    backendActor.updateUser(requestData)
+      .then(response => {
+        const _userData = {
+          principal: userData.principal,
+          name: formDataUserProfileDialog.name,
+          email: formDataUserProfileDialog.email
+        };
+        setUserData(_userData);
+        localStorage.setItem('userData', JSON.stringify(_userData));
+        if (formDataUserProfileDialog.name && formDataUserProfileDialog.name.length > 0) {
+          setWelcomeMessage("Welcome " + _userData.name);
+        } else {
+          setWelcomeMessage(null);
+        }
+        handleCloseUserProfileDialog();
+        setLoading(false);
+        loadToast('Profile saved successfully!')
+      }).catch(error => {
+        console.error(error);
+        setLoading(false);
+      });
+  }
+
+  function loadToast(msg) {
+    setToastMessage(msg)
+    setShowToast(true);
+  }
+
+  function setDefaultWelcomeMessage() {
+    const userDataLS = localStorage.getItem("userData");
+    if (userDataLS) {
+      const userDataObj = JSON.parse(userDataLS);
+      setUserData(userDataObj);
+      let _name = userDataObj.principal;
+      if (userDataObj.name && userDataObj.name.length > 0) {
+        _name = userDataObj.name;
+        setWelcomeMessage("Welcome " + _name);
+      } else {
+        setWelcomeMessage(null);
+      }
     }
-  };
+  }
+
+  async function fetchICPPrice() {
+    // creating new actor here to track user between login and logout.
+    const authClient = await AuthClient.create();
+    const identity = authClient.getIdentity();
+    const agent = new HttpAgent({ identity });
+    let actor = createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
+      agent,
+    });
+    const jsonData = JSON.parse(await actor.getICPPrice()).data;
+    let newPrice = Number(jsonData.amount);
+    setPrice(newPrice);
+  }
 
   useEffect(() => {
     console.log('Price will be fetched every 2 second');
-    async function loadBackend() {
+    async function appInit() {
       const authClient = await AuthClient.create();
       var _isAuthenticated = authClient.isAuthenticated() && ((await authClient.getIdentity().getPrincipal().isAnonymous()) === false);
       try {
@@ -163,18 +182,7 @@ const App = () => {
         });
         setBackendActor(_backendActor);
         setIsAuthenticated(_isAuthenticated);
-        const userDataLS = localStorage.getItem("userData");
-        if (userDataLS) {
-          const userDataObj = JSON.parse(userDataLS);
-          setUserData(userDataObj);
-          let _name = userDataObj.principal;
-          if (userDataObj.name && userDataObj.name.length > 0) {
-            _name = userDataObj.name;
-            setWelcomeMessage("Welcome " + _name);
-          } else {
-            setWelcomeMessage(null);
-          }
-        }
+        setDefaultWelcomeMessage();
 
         await fetchICPPrice();
         const interval = setInterval(async () => {
@@ -188,20 +196,7 @@ const App = () => {
       }
     }
 
-    const fetchICPPrice = async () => {
-      // creating new actor here to track user between login and logout.
-      const authClient = await AuthClient.create();
-      const identity = authClient.getIdentity();
-      const agent = new HttpAgent({ identity });
-      let actor = createActor(process.env.CANISTER_ID_ICP_APP_BACKEND, {
-        agent,
-      });
-      const jsonData = JSON.parse(await actor.getICPPrice()).data;
-      let newPrice = Number(jsonData.amount);
-      setPrice(newPrice);
-    }
-
-    loadBackend();
+    appInit();
   }, []);
 
   return (
