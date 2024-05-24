@@ -27,3 +27,5 @@ dist/
 .mops
 
 public/*.Identifier
+
+package-lock.json

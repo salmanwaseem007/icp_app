@@ -29,33 +29,50 @@ Individual Screenshots:
 
 ## Running the project locally
 
-If you want to test your project locally, you can use the following commands, within icp_app/:
+If you want to test your project locally, you can use the following commands:
 
 ```bash
-# Starts the replica, running in the background
-dfx start --background
+# Update Debain, install libunwind8 and NodeJS
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install libunwind8
+sudo apt install nodejs npm
 
-# Deploys your canisters to the replica and generates your candid interface
+# Install MOPS, CURL and DFX
+sudo npm i -g ic-mops
+sudo apt install curl
+sh -ci "$(curl -fsSL https://smartcontracts.org/install.sh)"
+dfx --version
+
+# Start DFX in the background
+dfx start --clean --background
+
+# Lets setup DFX for the first time in another terminal. Create a new Identity or import an existing identity from an exported private key file
+
+dfx identity new icp_app
+
+# Or
+dfx identity import --storage-mode plaintext icp_app icp_app.pem
+
+# Switch to new identity
+dfx identity use icp_app
+
+# Create canisters, within icp_app/
+dfx canister create --all
+
+# Deploy all Canisters, within icp_app/
 dfx deploy
-```
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
-
-If you have made changes to your backend canister, you can generate a new candid interface with
-
-```bash
-npm run generate
-```
-
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
-
-If you are making frontend changes, you can start a development server with
-
-```bash
+# Open front canister code (icp_app\src\icp_app_frontend) in VScode (Use WSL in Windows ) and run following command to quickly test your frontend canister code without updating the deployed canister
 npm start
-```
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+# Open http://localhost:3000/ to view your front end application, which will be talking to backend canister, deployed on DFX locally
+
+# Helpful commands
+
+# Run the following command if backed code is changed and requires a canister re-create
+dfx canister stop icp_app_backend &&  dfx deploy icp_app_backend && dfx canister start icp_app_backend
+```
 
 ### Note on frontend environment variables
 
