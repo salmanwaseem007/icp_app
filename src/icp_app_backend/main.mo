@@ -1,5 +1,9 @@
+
+import XRC "canister:xrc";
 import Blob "mo:base/Blob";
 import Cycles "mo:base/ExperimentalCycles";
+import Nat32 "mo:base/Nat32";
+import Nat64 "mo:base/Nat64";
 import Text "mo:base/Text";
 import { print } = "mo:base/Debug";
 import Timer "mo:base/Timer";
@@ -8,6 +12,8 @@ import Bool "mo:base/Bool";
 import Trie "mo:base/Trie";
 import Option "mo:base/Option";
 import Principal "mo:base/Principal";
+import Float "mo:base/Float";
+import Dbg "mo:base/Debug";
 import Types "Types";
 
 actor {
@@ -173,6 +179,39 @@ actor {
 
     requirePriceUpdate := true;
     icpPrice;
+  };
+
+  public func get_exchange_rate<system>(symbol : Text) : async Float {
+
+    let request : XRC.GetExchangeRateRequest = {
+      base_asset = {
+        symbol = symbol;
+        class_ = #Cryptocurrency;
+      };
+      quote_asset = {
+        symbol = "USDT";
+        class_ = #Cryptocurrency;
+      };
+      // Get the current rate.
+      timestamp = null;
+    };
+
+    // Every XRC call needs 1B cycles.
+    Cycles.add(10_000_000_000);
+    let response = await XRC.get_exchange_rate(request);
+    // Print out the response to get a detailed view.
+    Dbg.print(debug_show(response));
+    // Return 0.0 if there is an error for the sake of simplicity.
+    switch(response) {
+      case (#Ok(rate_response)) {
+        let float_rate = Float.fromInt(Nat64.toNat(rate_response.rate));
+        let float_divisor = Float.fromInt(Nat32.toNat(10**rate_response.metadata.decimals));
+        return float_rate / float_divisor;
+      };
+      case _ {
+        return 0.0;
+      };
+    }
   };
 
   private func recurringICPPriceUpdate() : async () {

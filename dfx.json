@@ -2,11 +2,27 @@
   "canisters": {
     "icp_app_backend": {
       "main": "src/icp_app_backend/main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "dependencies": [
+        "xrc"
+      ]
+    },
+    "xrc": {
+      "type": "custom",
+      "candid": "xrc/xrc.did",
+      "wasm": "xrc/xrc.wasm.gz",
+      "remote": {
+        "candid": "xrc/xrc.did",
+        "id": {
+          "ic": "uf6dk-hyaaa-aaaaq-qaaaq-cai",
+          "playground": "uf6dk-hyaaa-aaaaq-qaaaq-cai"
+        }
+      }
     },
     "icp_app_frontend": {
       "dependencies": [
         "icp_app_backend",
+        "xrc",
         "internet_identity"
       ],
       "source": [
